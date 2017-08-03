@@ -31,6 +31,8 @@ import (
 	"golang.org/x/net/http2"
 )
 
+const heyUA = "hey/0.0.1"
+
 type result struct {
 	err           error
 	statusCode    int
@@ -82,10 +84,11 @@ type Work struct {
 	// Optional.
 	ProxyAddr *url.URL
 
+	// X509 certificates
+	Certs []tls.Certificate
+
 	results chan *result
 }
-
-const heyUA = "hey/0.0.1"
 
 // Run makes all the requests, prints the summary. It blocks until
 // all work is done.
@@ -181,6 +184,7 @@ func (b *Work) runWorker(n int) {
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
+			Certificates:       b.Certs,
 			InsecureSkipVerify: true,
 		},
 		DisableCompression: b.DisableCompression,
