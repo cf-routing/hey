@@ -17,6 +17,7 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -67,8 +68,9 @@ var (
 	disableRedirects   = flag.Bool("disable-redirects", false, "")
 	proxyAddr          = flag.String("x", "", "")
 
-	cert = flag.String("cert", "", "TLS certificate")
-	key  = flag.String("key", "", "TLS key")
+	cert   = flag.String("cert", "", "TLS certificate")
+	key    = flag.String("key", "", "TLS key")
+	cacert = flag.String("cacert", "", "CA certificate")
 )
 
 var usage = `Usage: hey [options...] <url>
@@ -109,6 +111,7 @@ Options:
 
   -cert <cert.pem>      Client certificate to use for mTLS.
   -key <key.pem>        Client private key to use for mTLS.
+  -cacert <cert.pem>    CA certificate to validate the peer.
 `
 
 func main() {
@@ -230,6 +233,7 @@ func main() {
 	req.Header = header
 
 	certs := make([]tls.Certificate, 0)
+	caCertPool := x509.NewCertPool()
 	if *cert != "" && *key != "" {
 		tlsCert, err := tls.LoadX509KeyPair(*cert, *key)
 		if err != nil {
@@ -237,6 +241,13 @@ func main() {
 		}
 		log.Printf("Loaded TLS certificate: %s/%s", *cert, *key)
 		certs = append(certs, tlsCert)
+	}
+	if *cacert != "" {
+		caCert, err := ioutil.ReadFile(*cacert)
+		if err != nil {
+			log.Fatal(err)
+		}
+		caCertPool.AppendCertsFromPEM(caCert)
 	}
 
 	w := &requester.Work{
@@ -253,6 +264,7 @@ func main() {
 		ProxyAddr:          proxyURL,
 		Output:             *output,
 		Certs:              certs,
+		RootCAs:            caCertPool,
 	}
 	w.Init()
 

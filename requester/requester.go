@@ -18,6 +18,8 @@ package requester
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -90,7 +92,8 @@ type Work struct {
 	ProxyAddr *url.URL
 
 	// Optional set of client certificates to use for mTLS:
-	Certs []tls.Certificate
+	Certs   []tls.Certificate
+	RootCAs *x509.CertPool
 
 	// Writer is where results will be written. If nil, results are written to stdout.
 	Writer io.Writer
@@ -237,12 +240,14 @@ func (b *Work) runWorker(client *http.Client, n int) {
 func (b *Work) runWorkers() {
 	var wg sync.WaitGroup
 	wg.Add(b.C)
+	fmt.Printf("%v\n", b.Certs)
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
 			ServerName:         b.Request.Host,
 			Certificates:       b.Certs,
+			RootCAs:            b.RootCAs,
 		},
 		MaxIdleConnsPerHost: min(b.C, maxIdleConn),
 		DisableCompression:  b.DisableCompression,
