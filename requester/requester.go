@@ -19,7 +19,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -240,7 +239,6 @@ func (b *Work) runWorker(client *http.Client, n int) {
 func (b *Work) runWorkers() {
 	var wg sync.WaitGroup
 	wg.Add(b.C)
-	fmt.Printf("%v\n", b.Certs)
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
